@@ -17,11 +17,18 @@ var s1 = {};
 var t1 = {};
 var t2 = {};
 
+standard = {
+	"http://asn.jesandco.org/resources/D10003B9": 1, 
+	"http://asn.jesandco.org/resources/D100029D": 5, 
+	"http://asn.jesandco.org/resources/D10003FB": 10
+}
+
 var loadData = function(){
 
 	d3.json('data/s1.json', function(data){
 		for (key in data){
 			var temp = data[key]
+
 			//if (temp != undefined){
 			//	console.log(temp[0].value);
 			//
@@ -32,14 +39,20 @@ var loadData = function(){
 					"subject": temp['http://purl.org/dc/terms/subject'][0].value, 
 					"isPartOf": temp['http://purl.org/dc/terms/isPartOf'], 
 					"isChildOf": temp['http://purl.org/gem/qualifiers/isChildOf'], 
-					"educationLevel": temp['http://purl.org/dc/terms/educationLevel'], 
+					"educationLevel": temp['http://purl.org/dc/terms/educationLevel'].length, 
 				}
 
-				nodes.push({
+				var tempNode = {
 					"name": s1[key]['description'],
 					"id": key, 
-					"group": 1
-				});
+				}
+
+				if (key != "http://asn.jesandco.org/resources/D10003FB")
+					tempNode.group = standard[s1[key].isPartOf[0].value]
+				else
+					tempNode.group = standard['http://asn.jesandco.org/resources/D10003FB']
+
+				nodes.push(tempNode);
 
 				index[key] = nodes.length - 1;
 
@@ -47,7 +60,7 @@ var loadData = function(){
 					links.push({
 						"source": s1[key].isChildOf[0].value, 
 						"target": key, 
-						"value": 1
+						"value": 10
 					});
 				}
 			}
@@ -56,7 +69,7 @@ var loadData = function(){
 		if (nodes.length > 1500){
 			console.log(nodes.length);
 			console.log('s1 setup');
-			setUpForce();
+			loadBridges();
 		}
 	});
 
@@ -72,15 +85,21 @@ var loadData = function(){
 					"subject": temp['http://purl.org/dc/terms/subject'], 
 					"isPartOf": temp['http://purl.org/dc/terms/isPartOf'], 
 					"isChildOf": temp['http://purl.org/gem/qualifiers/isChildOf'], 
-					"educationLevel": temp['http://purl.org/dc/terms/educationLevel'],
+					"educationLevel": temp['http://purl.org/dc/terms/educationLevel'].length,
 					"title": temp['http://purl.org/dc/elements/1.1/title'] 
 				}
 
-				nodes.push({
-					"name": t1[key]['description'][0].value,
-					"id": key,
-					"group": 1
-				});
+				var tempNode = {
+					"name": t1[key]['description'],
+					"id": key, 
+				}
+
+				if (key != "http://asn.jesandco.org/resources/D10003B9")
+					tempNode.group = standard[t1[key].isPartOf[0].value]
+				else
+					tempNode.group = standard['http://asn.jesandco.org/resources/D10003B9']
+
+				nodes.push(tempNode);
 
 				index[key] = nodes.length - 1;
 
@@ -88,7 +107,7 @@ var loadData = function(){
 					links.push({
 						"source": t1[key].isChildOf[0].value, 
 						"target": key,
-						"value": 1
+						"value": 10
 					});
 				}
 			}
@@ -97,7 +116,7 @@ var loadData = function(){
 		if (nodes.length > 1500){
 			console.log(nodes.length);
 			console.log('t1 setup');
-			setUpForce();
+			loadBridges();
 		}
 	});
 
@@ -115,14 +134,21 @@ var loadData = function(){
 					"subject": temp['http://purl.org/dc/terms/subject'][0].value, 
 					"isPartOf": temp['http://purl.org/dc/terms/isPartOf'], 
 					"isChildOf": temp['http://purl.org/gem/qualifiers/isChildOf'], 
-					"educationLevel": temp['http://purl.org/dc/terms/educationLevel'], 
+					"educationLevel": temp['http://purl.org/dc/terms/educationLevel'].length, 
+					"title": temp['http://purl.org/dc/elements/1.1/title'] 
+
 				}
 
-				nodes.push({
+				var tempNode = {
 					"name": t2[key]['description'],
-					"id": key,
-					"group": 1
-				});
+					"id": key, 
+				}
+
+				if (key != "http://asn.jesandco.org/resources/D100029D")
+					tempNode.group = standard[t2[key].isPartOf[0].value]
+				else
+					tempNode.group = standard['http://asn.jesandco.org/resources/D100029D']
+				nodes.push(tempNode);
 
 				index[key] = nodes.length - 1;
 
@@ -130,7 +156,7 @@ var loadData = function(){
 					links.push({
 						"source": t2[key].isChildOf[0].value, 
 						"target": key,
-						"value": 1
+						"value": 10
 					});
 				}
 			}
@@ -139,11 +165,45 @@ var loadData = function(){
 		if (nodes.length > 1500){
 			console.log(nodes.length);
 			console.log('t2 setup');
-			setUpForce();
+			loadBridges();
 		}
 	});
 	console.log('returning something');
 	return nodes;
+}
+
+var loadBridges = function(){
+	console.log('drawing bridges');
+
+	d3.csv('data/t1-s1.csv', function(data){
+		for (key in data){
+			temp = data[key];
+			links.push({
+				"source": temp.subjectURI,
+				"target": temp.objectURI, 
+				"value": 0.4
+			});
+		}
+		//once both sets of links are drown
+		if (links.length > 2000){
+			setUpForce();
+		}
+	});
+
+	d3.csv('data/t2-s1.csv', function(data){
+		for (key in data){
+			temp = data[key];
+			links.push({
+				"source": temp.subjectURI,
+				"target": temp.objectURI, 
+				"value": 0.4
+			});
+		}
+		//once both sets of links are drown
+		if (links.length > 2000){
+			setUpForce();
+		}
+	});
 }
 
 console.log(nodes.length);
@@ -227,7 +287,6 @@ function setUpForce(){
 
 //Main Call
 loadData();
-
 /*
 
 var updateLinks, updateNodes;
