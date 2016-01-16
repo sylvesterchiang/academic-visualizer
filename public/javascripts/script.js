@@ -44,7 +44,7 @@ var loadData = function(){
 
 				var tempNode = {
 					"name": s1[key]['description'],
-					"id": key, 
+					"id": key
 				}
 
 				if (key != "http://asn.jesandco.org/resources/D10003FB")
@@ -222,12 +222,18 @@ function generateIndex(){
 function setUpForce(){
 
 	generateIndex();
+
 	//constants for SVG
 	var width = 5000;
 	var height = 3000;
 
 	//set up colour scale
 	var color = d3.scale.category20();
+
+	//set up focus
+	var focus_node = null, high_node = null;
+	var outline = false
+	var temp_color = null
 
 	//set up force layout
 	var force = d3.layout.force()
@@ -256,9 +262,21 @@ function setUpForce(){
 		.data(nodes)
 		.enter().append('circle')
 		.attr('class', 'node')
-		.attr('r', 8)
+		.attr('r', 12)
+		.attr('name', function(d){
+			return d.name;
+		})
 		.style('fill', function(d){
 			return color(d.group);
+		})
+		.on("mouseover", function(d){
+			temp_color = d3.select(this).style('fill');
+			d3.select(this).style('fill', color(4));
+			$("#name").text(d3.select(this).attr('name'));
+		})
+		.on("mouseout", function(d){
+			d3.select(this).style('fill', temp_color);
+			$("#name").text("placeholder");
 		});
 
 	//Now we are giving the SVGs co-ordinates - the force layout is generating the co-ordinates which this code is using to update the attributes of the SVG elements
