@@ -125,7 +125,7 @@ var loadData = function(){
 
 var hideNodes = function(){
 	for (key in set){
-		if (set[key].level > 1){
+		if (set[key].level > 0){
 			set[key]._children = set[key].children;
 			set[key].children = null; 
 		}
@@ -164,6 +164,8 @@ var loadBridges = function(links, nodes){
 	d3.csv('data/t1-s1.csv', function(data){
 		for (key in data){
 			temp = data[key];
+			console.log(set[temp.subjectURI].level);
+			console.log(set[temp.objectURI].level);
 			if (checkExist(nodes, temp.subjectURI, temp.objectURI)){
 				bridges.push({
 					"source": temp.subjectURI,
