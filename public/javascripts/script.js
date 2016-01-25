@@ -1,13 +1,14 @@
 var myStyles=['#268BD2', '#BD3613', '#FCF4DC'];
 
-var width = 500,
-    height = 500,
+var width = 600,
+    height = 400,
     root;
 
 var force = d3.layout.force()
     .size([width, height])
     .on("tick", tick)
-    .charge(-30);
+    .charge(-30)
+    .gravity(0.3)
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -25,8 +26,8 @@ var size = 0,
 
 standard = {
 	"http://asn.jesandco.org/resources/D10003B9": 1, 
-	"http://asn.jesandco.org/resources/D100029D": 5, 
-	"http://asn.jesandco.org/resources/D10003FB": 10
+	"http://asn.jesandco.org/resources/D100029D": 2, 
+	"http://asn.jesandco.org/resources/D10003FB": 3
 }
 
 var createNode = function(temp){
@@ -50,6 +51,18 @@ var createNode = function(temp){
 	else
 	{
 		set[key].level = 0;
+	}
+
+	if (set[key].isPartOf != undefined){
+		set[key].group = standard[set[key].isPartOf[0].value];
+	}
+	else{
+		if (key == "http://asn.jesandco.org/resources/D10003FB")
+			set[key].group = standard[key];
+		else if (key == "http://asn.jesandco.org/resources/D10003B9")
+			set[key].group = standard[key];
+		else
+			set[key].group = standard[key];
 	}
 }
 
@@ -112,43 +125,77 @@ var loadData = function(){
 
 var hideNodes = function(){
 	for (key in set){
-		if (set[key].level > 0){
+		if (set[key].level > 1){
 			set[key]._children = set[key].children;
 			set[key].children = null; 
 		}
 	}
 }
 
-var loadBridges = function(){
+//checks to see if the set of links contains both source and target nodes. 
+var checkExist = function(nodes, source, target){
+	var hasSource = false;
+	var hasTarget = false;
+
+	for (var i = 0; i < nodes.length; i ++){
+		if (nodes[i].name == source){
+			hasSource = true;
+			console.log('has source');
+		}
+		else if (nodes[i].name == target){
+			hasTarget = true;
+			console.log('has target');
+		}
+	}
+	if (hasSource && hasTarget){
+		return true;
+	}
+	return false;
+}
+
+var loadBridges = function(links, nodes){
 	console.log('drawing bridges');
+
+	var bridge1 = false, 
+		bridge2 = false;
+
+	var bridges = [];
 
 	d3.csv('data/t1-s1.csv', function(data){
 		for (key in data){
 			temp = data[key];
-			links.push({
-				"source": temp.subjectURI,
-				"target": temp.objectURI, 
-				"value": 0.4
-			});
+			if (checkExist(nodes, temp.subjectURI, temp.objectURI)){
+				bridges.push({
+					"source": temp.subjectURI,
+					"target": temp.objectURI, 
+					"value": 0.4
+				});
+			}
 		}
+		bridge1 = true;
 		//once both sets of links are drown
-		if (links.length > 2000){
-			update();
+		if (bridge1 && bridge2){
+			console.log('done loading bridges');
+			generateForce(nodes, links, bridges);
 		}
 	});
 
 	d3.csv('data/t2-s1.csv', function(data){
 		for (key in data){
 			temp = data[key];
-			links.push({
-				"source": temp.subjectURI,
-				"target": temp.objectURI, 
-				"value": 0.4
-			});
+			if (checkExist(nodes, temp.subjectURI, temp.objectURI)){
+				bridges.push({
+					"source": temp.subjectURI,
+					"target": temp.objectURI, 
+					"value": 0.4
+				});
+			}
 		}
+		bridge2 = true;
 		//once both sets of links are drown
-		if (links.length > 2000){
-			update();
+		if (bridge1 && bridge2){
+			console.log('done loading bridges');
+			generateForce(nodes, links, bridges);
 		}
 	});
 }
@@ -175,11 +222,22 @@ function update() {
 
     console.log(nodes);
 
-
   var links = d3.layout.tree().links(nodes);
   //var shit = generateLinks(nodes);
   // Restart the force layout.
   console.log(links);
+
+  var bridges = loadBridges(links, nodes);
+  console.log(bridges);
+}
+
+var generateForce = function(nodes, links, bridges){
+	console.log('generate force');
+	console.log(nodes);
+	console.log(links);
+	console.log(bridges);
+
+	links = links.concat(bridges);
 
   force
       .nodes(nodes)
@@ -221,7 +279,19 @@ function update() {
       .attr("r", function(d) { return 5 - Math.sqrt(d.size); })
       .style("fill", color)
       .on("click", click)
-      .call(force.drag);
+      .call(force.drag)
+      .attr('name', function(d){
+			return d.description;
+		})
+      .on("mouseover", function(d){
+ 			temp_color = d3.select(this).style('fill');
+ 			d3.select(this).style('fill', "#ffcc00");
+ 			$("#name").text(d3.select(this).attr('name'));
+ 		})
+ 		.on("mouseout", function(d){
+ 			d3.select(this).style('fill', temp_color);
+ 			$("#name").text(" ");
+  		});
 }
 
 function tick() {
@@ -236,7 +306,15 @@ function tick() {
 
 // Color leaf nodes orange, and packages white or blue.
 function color(d) {
-  return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
+	if (d.group == 1){
+    	return d._children ? "#3182bd" : d.children ? "#3333cc" : "#c6dbef";
+    }
+    else if (d.group == 2){
+    	return d._children ? "ff3300" : d.children ? "#cc2900" : "#ffc2b3";
+    }
+    else{
+    	return d._children ? "#00cc66" : d.children ? "#008041" : "#00e675";
+    }
 }
 
 // Toggle children on click.
@@ -276,22 +354,14 @@ function flatten(key) {
 			"name": key, 
 			"level": temp.level, 
 			"id": id, 
-			"size": temp.level
+			"size": temp.level, 
+			"group": temp.group
 		};
 
 		temp.id = id;
 		id++;
 
 		console.log(tempNode.id);
-
-		/*if (key != "http://asn.jesandco.org/resources/D10003FB" && key != "http://asn.jesandco.org/resources/D10003B9" && key != "http://asn.jesandco.org/resources/D100029D")
-		{
-			tempNode.group = standard[temp.isPartOf[0].value];
-		}
-		else
-		{
-			tempNode.group = standard[key];
-		}*/
 
 		if (temp.children != undefined) 
 		{
