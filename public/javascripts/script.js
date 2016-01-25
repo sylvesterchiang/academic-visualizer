@@ -1,12 +1,13 @@
 var myStyles=['#268BD2', '#BD3613', '#FCF4DC'];
 
-var width = 2000,
-    height = 1500,
+var width = 500,
+    height = 500,
     root;
 
 var force = d3.layout.force()
     .size([width, height])
-    .on("tick", tick);
+    .on("tick", tick)
+    .charge(-30);
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -19,7 +20,8 @@ var link = svg.selectAll(".link"),
 
 var index = {},
 	set = {};
-var size = 0;
+var size = 0, 
+	id = 0;
 
 standard = {
 	"http://asn.jesandco.org/resources/D10003B9": 1, 
@@ -29,7 +31,6 @@ standard = {
 
 var createNode = function(temp){
 	set[key] = {
-		"id": size,
 		"key": key, 
 		"description": temp['http://purl.org/dc/terms/description'][0].value, 
 		"comment": temp['http://purl.org/ASN/schema/core/comments'], 
@@ -158,18 +159,39 @@ function update() {
 
 	console.log('updating');
 
-  var nodes = flatten("http://asn.jesandco.org/resources/D10003FB").concat(flatten("http://asn.jesandco.org/resources/D10003B9")).concat(flatten("http://asn.jesandco.org/resources/D100029D"));
-  var shit = generateLinks("http://asn.jesandco.org/resources/D10003FB").concat(generateLinks("http://asn.jesandco.org/resources/D10003B9")).concat(generateLinks("http://asn.jesandco.org/resources/D100029D"));
+	id = 0;
 
+  var nodes = flatten("http://asn.jesandco.org/resources/D10003FB").concat(flatten("http://asn.jesandco.org/resources/D10003B9")).concat(flatten("http://asn.jesandco.org/resources/D100029D"));
+  //var shit = generateLinks("http://asn.jesandco.org/resources/D10003FB").concat(generateLinks("http://asn.jesandco.org/resources/D10003B9")).concat(generateLinks("http://asn.jesandco.org/resources/D100029D"));
+  
+  console.log(nodes[0]);
+  console.log(set[nodes[0].name])
+
+  for (var i = 0; i < nodes.length; i++){
+  	nodes[i].x = set[nodes[i].name].x;
+  	nodes[i].y = set[nodes[i].name].y;
+  }	
+  console.log(nodes[0]);
+
+    console.log(nodes);
+
+
+  var links = d3.layout.tree().links(nodes);
+  //var shit = generateLinks(nodes);
   // Restart the force layout.
-  console.log(shit);
+  console.log(links);
 
   force
       .nodes(nodes)
-      .links(shit)
+      .links(links)
       .start();
 
   console.log('links formed');
+
+  for (var i = 0; i < nodes.length; i++){
+  	set[nodes[i].name].x = nodes[i].x;
+  	set[nodes[i].name].y = nodes[i].y;
+  }
 
   // Update the links…
   link = link.data(links, function(d) { return d.target.id; });
@@ -196,7 +218,7 @@ function update() {
       .attr("class", "node")
       .attr("cx", function(d) { return d.x; })
       .attr("cy", function(d) { return d.y; })
-      .attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
+      .attr("r", function(d) { return 5 - Math.sqrt(d.size); })
       .style("fill", color)
       .on("click", click)
       .call(force.drag);
@@ -252,24 +274,30 @@ function flatten(key) {
 		var tempNode = {
 			"description": temp.description,
 			"name": key, 
-			"id": temp.id, 
-			"level": temp.level
+			"level": temp.level, 
+			"id": id, 
+			"size": temp.level
 		};
 
-		if (key != "http://asn.jesandco.org/resources/D10003FB" && key != "http://asn.jesandco.org/resources/D10003B9" && key != "http://asn.jesandco.org/resources/D100029D")
+		temp.id = id;
+		id++;
+
+		console.log(tempNode.id);
+
+		/*if (key != "http://asn.jesandco.org/resources/D10003FB" && key != "http://asn.jesandco.org/resources/D10003B9" && key != "http://asn.jesandco.org/resources/D100029D")
 		{
 			tempNode.group = standard[temp.isPartOf[0].value];
 		}
 		else
 		{
 			tempNode.group = standard[key];
-		}
+		}*/
 
 		if (temp.children != undefined) 
 		{
 			var tempChildren = [];
 			for (var k = 0; k < temp.children.length; k ++){
-				tempChildren.push(set[temp.children[k].value].id);
+				tempChildren.push(set[set[key].children[k].value].id);
 			}
 			tempNode.children = tempChildren;
 		}
@@ -281,7 +309,7 @@ function flatten(key) {
 	}
 
 	recurse(key);
-
+	console.log(nodes);
 	return nodes;
 }
 
@@ -290,19 +318,16 @@ function generateLinks(key){
 	var source = [];
 	var target = [];
 
+	console.log('links');
+
 	function recurse(key){
 
 		if (set[key].children != undefined){
 
 			for (var i = 0; i < set[key].children.length; i++){
 
-				//console.log('pancakes');
-				//console.log(set[key].id);
-				//console.log(set[key].children[i].value);
-				//console.log(set[set[key].children[i].value].id);
-
-				source.push(set[key].id);
-				target.push(set[set[key].children[i].value].id);
+				source.push(set[key]);
+				target.push(set[set[key].children[i].value]);
 
 				recurse(set[key].children[i].value);
 			}
@@ -319,8 +344,6 @@ function generateLinks(key){
 			"target": target[i]
 		});
 	}
-
-	console.log(shit);
 
 	return shit;
 }
