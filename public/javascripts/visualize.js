@@ -20,8 +20,18 @@ var link = svg.selectAll(".link"),
 d3.json("data/actual_data.json", function(error, json) {
   if (error) throw error;
 
-  root = hideNodes(json);
+  root = json;
   console.log(root);
+  function collapse(d) {
+    if (d.children) {
+      d._children = d.children;
+      d._children.forEach(collapse);
+      d.children = null;
+    }
+  }
+  //root.data[0].children.forEach(collapse);
+  //root.data[1].children.forEach(collapse);
+  //root.data[2].children.forEach(collapse);
   update();
 });
 
@@ -78,9 +88,16 @@ function tick() {
 
 // Color leaf nodes orange, and packages white or blue.
 function color(d) {
-  return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
+  if (d.group == 1){
+      return d._children ? "#3182bd" : d.children ? "#3333cc" : "#c6dbef";
+    }
+    else if (d.group == 2){
+      return d._children ? "ff3300" : d.children ? "#cc2900" : "#ffc2b3";
+    }
+    else{
+      return d._children ? "#00cc66" : d.children ? "#008041" : "#00e675";
+    }
 }
-
 // Toggle children on click.
 function click(d) {
   if (!d3.event.defaultPrevented) {
@@ -115,7 +132,7 @@ function flatten(root) {
 function hideNodes(root){
   function recurse(node){
     if (node.children) node.children.forEach(recurse);
-    if (node.level > 2){
+    if (node.level > 1){
       node._children = node.children;
       node.children = null;
     }
