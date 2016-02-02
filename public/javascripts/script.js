@@ -39,10 +39,16 @@ var createNode = function(temp){
 		"isPartOf": temp['http://purl.org/dc/terms/isPartOf'], 
 		"isChildOf": temp['http://purl.org/gem/qualifiers/isChildOf'], 
 		"educationLevel": temp['http://purl.org/dc/terms/educationLevel'].length, 
-		"children": temp['http://purl.org/gem/qualifiers/hasChild'], 
-		"_children": null
+		"childNodes": [],
+		"children": null, 
+		"_children": null, 
+		"bridge": null
 	};
 	size++;
+
+	if (temp['http://purl.org/gem/qualifiers/hasChild'] != undefined){
+		set[key].children = temp['http://purl.org/gem/qualifiers/hasChild'];
+	}
 
 	if (key != "http://asn.jesandco.org/resources/D10003FB" && key != "http://asn.jesandco.org/resources/D10003B9" && key != "http://asn.jesandco.org/resources/D100029D")
 	{
@@ -66,6 +72,82 @@ var createNode = function(temp){
 	}
 }
 
+var createJson = function(key){
+
+	var recurse = function(key){
+
+		children = [];
+		if (set[key].children){
+			for (var i = 0; i < set[key].children.length; i ++){
+				set[key].childNodes.push(recurse(set[key].children[i].value));
+			}
+			
+		}
+
+		console.log(children);
+		var node = {
+			"key": key, 
+			"description": set[key].description, 
+			"level": set[key].level, 
+			"children": set[key].childNodes, 
+			"_children": null, 
+			"group": set[key].group
+		};
+
+		return node
+	}
+
+	return recurse(key);
+}
+
+var drawBridges = function(){
+	console.log('creating bridges');
+
+	var bridgeCount = 0;
+
+	d3.csv('data/t1-s1.csv', function(data){
+		for (key in data){
+			temp = data[key];
+			set[temp.subjectURI].bridge = temp.objectURI,
+			set[temp.objectURI].bridge = temp.subjectURI 
+
+			bridgeCount+=1;
+		}
+
+		if (bridgeCount > 700){
+
+			console.log('done bridges');
+			s1 = createJson("http://asn.jesandco.org/resources/D10003FB");
+			t1 = createJson("http://asn.jesandco.org/resources/D10003B9");
+			t2 = createJson("http://asn.jesandco.org/resources/D100029D");
+
+			console.log(s1);
+			something = JSON.stringify({"data":[s1, t1, t2]});
+			console.log(something);
+		}
+	});
+
+	d3.csv('data/t2-s1.csv', function(data){
+		for (key in data){
+			temp = data[key];
+			set[temp.subjectURI].bridge = temp.objectURI,
+			set[temp.objectURI].bridge = temp.subjectURI 
+
+			bridgeCount +=1;
+		}
+
+		if (bridgeCount > 700){
+			console.log('done bridges');
+			s1 = createJson("http://asn.jesandco.org/resources/D10003FB");
+			t1 = createJson("http://asn.jesandco.org/resources/D10003B9");
+			t2 = createJson("http://asn.jesandco.org/resources/D100029D");
+
+			something = JSON.stringify({"data":[s1, t1, t2]});
+			console.log(something);
+		}
+	});
+}
+
 var loadData = function(){
 
 	d3.json('data/s1.json', function(data){
@@ -81,8 +163,9 @@ var loadData = function(){
 
 		if (size > 1500){
 			console.log('s1 setup');
-			hideNodes();
-			update();
+			//hideNodes();
+			//mupdate();
+			drawBridges();
 		}
 	});
 	
@@ -99,8 +182,9 @@ var loadData = function(){
 
 		if (size > 1500){
 			console.log('t1 setup');
-			hideNodes();
-			update();
+			//hideNodes();
+			//mupdate();
+			drawBridges();
 		}
 	});
 
@@ -117,8 +201,9 @@ var loadData = function(){
 
 		if (size > 1500){
 			console.log('t2 setup');
-			hideNodes();
-			update();
+			//hideNodes();
+			//mupdate();
+			drawBridges();
 		}
 	});
 }
@@ -153,6 +238,7 @@ var checkExist = function(nodes, source, target){
 	return false;
 }
 
+/*
 var loadBridges = function(links, nodes){
 	console.log('drawing bridges');
 
@@ -164,8 +250,6 @@ var loadBridges = function(links, nodes){
 	d3.csv('data/t1-s1.csv', function(data){
 		for (key in data){
 			temp = data[key];
-			console.log(set[temp.subjectURI].level);
-			console.log(set[temp.objectURI].level);
 			if (checkExist(nodes, temp.subjectURI, temp.objectURI)){
 				bridges.push({
 					"source": temp.subjectURI,
@@ -201,6 +285,7 @@ var loadBridges = function(links, nodes){
 		}
 	});
 }
+*/
 
 console.log('nodemon works');
 
@@ -229,8 +314,8 @@ function update() {
   // Restart the force layout.
   console.log(links);
 
-  var bridges = loadBridges(links, nodes);
-  console.log(bridges);
+  //var bridges = loadBridges(links, nodes);
+  //console.log(bridges);
 }
 
 var generateForce = function(nodes, links, bridges){
@@ -362,8 +447,6 @@ function flatten(key) {
 
 		temp.id = id;
 		id++;
-
-		console.log(tempNode.id);
 
 		if (temp.children != undefined) 
 		{
