@@ -89,9 +89,10 @@ var createJson = function(key){
 			"key": key, 
 			"description": set[key].description, 
 			"level": set[key].level, 
-			"children": set[key].childNodes, 
 			"_children": null, 
-			"group": set[key].group
+			"children": set[key].childNodes, 
+			"group": set[key].group,
+			"bridge": set[key].bridge
 		};
 
 		return node
@@ -141,6 +142,7 @@ var drawBridges = function(){
 			s1 = createJson("http://asn.jesandco.org/resources/D10003FB");
 			t1 = createJson("http://asn.jesandco.org/resources/D10003B9");
 			t2 = createJson("http://asn.jesandco.org/resources/D100029D");
+			console.log(s1);
 
 			something = JSON.stringify({"data":[s1, t1, t2]});
 			console.log(something);

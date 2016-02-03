@@ -17,22 +17,15 @@ var svg = d3.select("body").append("svg")
 var link = svg.selectAll(".link"),
     node = svg.selectAll(".node");
 
+var first = true;
+
 d3.json("data/actual_data.json", function(error, json) {
   if (error) throw error;
 
   root = json;
-  console.log(root);
-  function collapse(d) {
-    if (d.children) {
-      d._children = d.children;
-      d._children.forEach(collapse);
-      d.children = null;
-    }
-  }
-  //root.data[0].children.forEach(collapse);
-  //root.data[1].children.forEach(collapse);
-  //root.data[2].children.forEach(collapse);
+  
   update();
+
 });
 
 function update() {
@@ -40,6 +33,7 @@ function update() {
       links = d3.layout.tree().links(nodes);
 
   // Restart the force layout.
+
   force
       .nodes(nodes)
       .links(links)
@@ -73,7 +67,32 @@ function update() {
       .attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
       .style("fill", color)
       .on("click", click)
-      .call(force.drag);
+      .call(force.drag)
+      .attr('name', function(d){
+        return d.description;
+      })
+      .on("mouseover", function(d){
+        temp_color = d3.select(this).style('fill');
+        d3.select(this).style('fill', "#ffcc00");
+        $("#name").text(d3.select(this).attr('name'));
+      })
+      .on("mouseout", function(d){
+        d3.select(this).style('fill', temp_color);
+        $("#name").text(" ");
+      });
+
+
+  if (first){
+    var parent = d3.select("svg").selectAll(".node");
+    parent.each(function(d, i){
+      console.log(d);
+      d._children = d.children;
+      d.children = null;
+    });
+    first = false;
+    console.log('hide nodes');
+    update();
+  }
 }
 
 function tick() {
@@ -88,7 +107,7 @@ function tick() {
 
 // Color leaf nodes orange, and packages white or blue.
 function color(d) {
-  if (d.group == 1){
+    if (d.group == 1){
       return d._children ? "#3182bd" : d.children ? "#3333cc" : "#c6dbef";
     }
     else if (d.group == 2){
@@ -108,6 +127,7 @@ function click(d) {
       d.children = d._children;
       d._children = null;
     }
+    console.log(root);
     update();
   }
 }
@@ -126,20 +146,4 @@ function flatten(root) {
   recurse(root.data[1]);
   recurse(root.data[2]);
   return nodes;
-}
-
-//hides initial nodes
-function hideNodes(root){
-  function recurse(node){
-    if (node.children) node.children.forEach(recurse);
-    if (node.level > 1){
-      node._children = node.children;
-      node.children = null;
-    }
-  }
-
-  recurse(root.data[0]);
-  recurse(root.data[1]);
-  recurse(root.data[2]);
-  return root;
 }
