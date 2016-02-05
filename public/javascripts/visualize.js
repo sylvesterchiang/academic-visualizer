@@ -1,11 +1,11 @@
-var width = 600,
-    height = 400,
+var width = 700,
+    height = 300,
     root;
 
 var force = d3.layout.force()
     .size([width, height])
     .on("tick", tick)
-    .charge(-30)
+    .charge(-60)
     .gravity(0.3)
 
 var svg = d3.select("body").append("svg")
@@ -18,6 +18,18 @@ var link = svg.selectAll(".link"),
     node = svg.selectAll(".node");
 
 var first = true;
+var temp_hover;
+var temp_active;
+var bridgeKey;
+var bridgeLinks = [];
+
+var hidden;
+
+//jquery
+$('#bridge-button').hide();
+$('#bridge-button').click(function(){
+  showBridge();
+});
 
 d3.json("data/actual_data.json", function(error, json) {
   if (error) throw error;
@@ -64,35 +76,76 @@ function update() {
       .attr("class", "node")
       .attr("cx", function(d) { return d.x; })
       .attr("cy", function(d) { return d.y; })
-      .attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
+      .attr("r", function(d) { return Math.sqrt(30-d.level*6); })
+      .attr('id', function(d){ return 'name' + d.id; })
+      .attr("key", function(d){ return d.key })
       .style("fill", color)
       .on("click", click)
       .call(force.drag)
-      .attr('name', function(d){
+      .attr('hover', function(d){
         return d.description;
       })
       .on("mouseover", function(d){
-        temp_color = d3.select(this).style('fill');
+        temp_hover = d3.select(this).style('fill');
         d3.select(this).style('fill', "#ffcc00");
-        $("#name").text(d3.select(this).attr('name'));
+        $("#hover").text(d3.select(this).attr('hover'));
       })
       .on("mouseout", function(d){
-        d3.select(this).style('fill', temp_color);
-        $("#name").text(" ");
+        d3.select(this).style('fill', temp_hover);
+        $("#hover").text(" ");
       });
 
 
   if (first){
     var parent = d3.select("svg").selectAll(".node");
+    //hidden = jQuery.extend(true, {}, parent);
+
     parent.each(function(d, i){
-      console.log(d);
-      d._children = d.children;
-      d.children = null;
+      if(d.level > 0){
+        d._children = d.children;
+        d.children = null;
+      }
     });
     first = false;
     console.log('hide nodes');
     update();
   }
+}
+
+function showBridge(){
+
+  console.log('locating bridge...');
+
+  function recurseParent(key){
+    for (var i=0; i < hidden[0]; i++){
+      if (hidden[0][i].key === key){
+        console.log('found parent');
+        console.log(d);
+        graphNode = d3.select('#name' + hidden[0][i].id);
+        if (graphNode._children){
+          graphNode.children = graphNode._children;
+          graphNode._children = null;
+        }
+        if (graphNode.parent){
+          recurseParent(graphNode.parent);
+        }
+      }
+    }
+  }
+
+  for (var i=0; i < hidden[0].length; i++){
+    console.log(hidden[0][i].key);
+    console.log(bridgeKey);
+    var temp = d3.select('#name' + hidden[0][i].id)
+    console.log(temp);
+    if (temp.key === bridgeKey){
+      recurseParent(hidden[0][i].parent);
+    }
+  }
+
+  var lineage = [];
+
+  update();
 }
 
 function tick() {
@@ -119,6 +172,15 @@ function color(d) {
 }
 // Toggle children on click.
 function click(d) {
+  $("#active").text(d3.select(this).attr('hover'));
+
+  if(d.bridge){
+    $('#bridge-button').show();
+    bridgeKey = d.bridge;
+  }else{
+    $('#bridge-button').hide();
+  }
+
   if (!d3.event.defaultPrevented) {
     if (d.children) {
       d._children = d.children;

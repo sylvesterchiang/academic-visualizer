@@ -53,10 +53,12 @@ var createNode = function(temp){
 	if (key != "http://asn.jesandco.org/resources/D10003FB" && key != "http://asn.jesandco.org/resources/D10003B9" && key != "http://asn.jesandco.org/resources/D100029D")
 	{
 		set[key].level = set[set[key].isChildOf[0].value].level + 1;
+		set[key].isChildOf = set[key].isChildOf[0].value;
 	}
 	else
 	{
 		set[key].level = 0;
+		set[key].isChildOf = undefined;
 	}
 
 	if (set[key].isPartOf != undefined){
@@ -92,7 +94,8 @@ var createJson = function(key){
 			"_children": null, 
 			"children": set[key].childNodes, 
 			"group": set[key].group,
-			"bridge": set[key].bridge
+			"bridge": set[key].bridge, 
+			"parent": set[key].isChildOf
 		};
 
 		return node

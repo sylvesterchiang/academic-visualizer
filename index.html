@@ -10,11 +10,21 @@
 </head>
 
 <body>
-	<div class="center" style="padding:15px;"><h3>Academic-Visualizer</h3></div>
-	<div style="padding: 10px;"><strong>Description</strong></div>
-	<div id="name" style="height:40px;">
-		
+	<div class="container-fluid">
+		<div class="row"><div class="col-md-6"><h2>Academic Visualizer</h2></div></div>
+		<div class="row">
+			<div class="col-md-6 active description-block">
+				<div><h3>Active Node</h3></div>
+				<div id="active"></div>
+				<button class="btn btn-success" id="bridge-button">Show Bridge</button>
+			</div>
+			<div class="col-md-6 hover description-block">
+				<div><h3>Hover Node</h3></div>
+				<div id="hover"></div>
+			</div>
+		</div>
 	</div>
+		
 	<!--
 	<div class="container">
 		<h2>D3 Graphics</h2>
